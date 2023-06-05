@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proxy Checker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 20px;
+    }
+    label {
+      margin-bottom: 10px;
+    }
+    textarea {
+      width: 300px;
+      height: 200px;
+      resize: vertical;
+    }
+    button {
+      padding: 10px 20px;
+      margin-top: 10px;
+    }
+    #results {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Proxy Checker</h1>
+  <form id="proxyForm">
+    <label for="proxyList">Proxy List (IP:Port per line)</label>
+    <textarea id="proxyList" placeholder="Enter proxy list"></textarea>
+    <button type="submit">Check Proxies</button>
+  </form>
+
+  <div id="results"></div>
+
+  <script>
+    const form = document.getElementById('proxyForm');
+    const proxyList = document.getElementById('proxyList');
+    const resultsDiv = document.getElementById('results');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      resultsDiv.innerHTML = '';
+
+      const proxies = proxyList.value.trim().split('\n').map((line) => {
+        const [ip, port] = line.split(':');
+        return {
+          ip: ip.trim(),
+          port: port.trim(),
+          protocols: ['http', 'https']
+        };
+      });
+
+      const response = await fetch('/check', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ proxies })
+      });
+
+      if (response.ok) {
+        const results = await response.json();
+        displayResults(results);
+      } else {
+        resultsDiv.innerHTML = 'An error occurred while checking proxies.';
+      }
+    });
+
+    function displayResults(results) {
+      results.forEach((result) => {
+        const proxyStatus = document.createElement('p');
+        proxyStatus.innerText = `Proxy ${result.proxy} status:`;
+        resultsDiv.appendChild(proxyStatus);
+
+        const httpStatus = document.createElement('p');
+        httpStatus.innerText = `- HTTP: ${result.http}`;
+        resultsDiv.appendChild(httpStatus);
+
+        const httpsStatus = document.createElement('p');
+        httpsStatus.innerText = `- HTTPS: ${result.https}`;
+        resultsDiv.appendChild(httpsStatus);
+
+        const separator = document.createElement('hr');
+        resultsDiv.appendChild(separator);
+      });
+    }
+  </script>
+</body>
+</html>
